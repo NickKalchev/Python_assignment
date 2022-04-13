@@ -1,7 +1,38 @@
 from flask import Flask, request, jsonify, Response
 from datetime import datetime
+import sqlite3
+from sqlite3 import Error
 
 app = Flask(__name__)
+
+
+def sql_connection():
+
+    try:
+        con = sqlite3.connect('users.db')
+        return con
+
+    except Error:
+        print(Error)
+
+
+def sql_table(con):
+
+    cursor_obj = con.cursor()
+
+    cursor_obj.execute(
+        """CREATE TABLE if not exists users(
+            id integer PRIMARY KEY AUTOINCREMENT, 
+            name text NOT NULL, 
+            address VARCHAR(100), 
+            salary real, 
+            age integer NOT NULL
+        )"""
+    )
+
+    con.commit()
+    con.close()
+
 
 @app.route('/', methods=['GET'])
 def index():
@@ -46,4 +77,6 @@ def index():
 
 
 if __name__ == "__main__":
+    con = sql_connection()
+    sql_table(con)
     app.run(threaded=True, port=8000)
