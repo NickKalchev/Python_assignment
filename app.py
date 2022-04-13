@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from flask import Flask, request, jsonify, Response
 from datetime import datetime
 import sqlite3
