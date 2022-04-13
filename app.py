@@ -76,6 +76,120 @@ def index():
     return message
 
 
+@app.route("/users/", methods=['GET', 'POST'])
+def user():
+    args = request.get_json()
+    time_now = datetime.now()
+    id_get = request.args.get('id')
+    name_get = request.args.get('name')
+    name = args.get('name')
+    address = args.get('address')
+    age = args.get('age')
+    salary = args.get('salary')
+    not_found_code = Response(status=404, mimetype='application/json')
+
+    if request.method == 'GET':
+        users_l = []
+        db = sqlite3.connect('users.db')
+        cursor = db.cursor()
+
+        if not id_get and not name_get:
+            not_found_code
+            error = jsonify({"status": "error", "reason": "id or name is required"})
+            return error
+
+        if name_get:
+            cursor.execute(
+                """
+                    SELECT * 
+                    FROM users 
+                    WHERE name=?
+                """, (name_get,))
+            found_user_name = cursor.fetchone()
+            users_l.append(found_user_name)
+
+        if id_get:
+            cursor.execute(
+                """
+                    SELECT * 
+                    FROM users 
+                    WHERE id=?
+                """, [id_get])
+            found_user_id = cursor.fetchone()
+            users_l.append(found_user_id)
+
+        if id_get and name_get:
+            cursor.execute(
+                """
+                    SELECT * 
+                    FROM users 
+                    WHERE id=? and name=?
+                """, [id_get, name_get])
+
+        if not users_l:
+            not_found = jsonify({"status": "error", "reason": "Requested user not found"})
+            not_found_code
+            return not_found
+
+        db.close()
+        result = jsonify({
+            "status": "success",
+            "result": users_l,
+            "date": time_now.strftime('%Y-%m-%d %H:%M')
+        })
+        return result
+
+    if request.method == 'POST':
+        db = sqlite3.connect('users.db')
+        cursor = db.cursor()
+
+        if not name or not isinstance(name, str):
+            error = jsonify({"status": "error", "reason": "Name is not a string"})
+            return error
+        if not address or not isinstance(address, str):
+            error = jsonify({"status": "error", "reason": "Address is not a string"})
+            return error
+        if not age or not isinstance(age, int):
+            error = jsonify({"status": "error", "reason": "Age is not an integer"})
+            return error
+        if not salary or not isinstance(salary, int):
+            error = jsonify({"status": "error", "reason": "Salary is not an integer"})
+            return error
+
+        cursor.execute(
+            """
+                SELECT name 
+                FROM users 
+                WHERE name=?
+            """, [name])
+
+        found_record = cursor.fetchone()
+
+        if found_record:
+            error = jsonify({"status": "error", "reason": "User with such name is already present"})
+            return error
+        else:
+            cursor.execute(
+                "INSERT INTO users(name, address, age, salary) VALUES (?, ?, ?, ?)",
+                (name, address, age, salary)
+            )
+            db.commit()
+            cursor.execute("SELECT * FROM users ORDER BY id DESC LIMIT 1")
+            last_item = cursor.fetchone()
+            respond = jsonify({"status": "success", "result":
+                {
+                    "id:": last_item[0],
+                    "name": last_item[1],
+                    "age": last_item[4],
+                    "salary": last_item[3],
+                    "address": last_item[2]
+                },
+                    "date": time_now.strftime('%Y-%m-%d %H:%M')
+                })
+            db.close()
+            return respond
+
+
 if __name__ == "__main__":
     con = sql_connection()
     sql_table(con)
