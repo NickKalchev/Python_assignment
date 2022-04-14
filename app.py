@@ -42,34 +42,25 @@ def index():
     b = args.get('b')
     op = args.get('op')
     time_now = datetime.now()
-    success_code = Response(status=200, mimetype='application/json')
-    bad_req_code = Response(status=400, mimetype='application/json')
     result = ""
 
     if not a or a == "":
-        bad_req_code
         js_arr = jsonify({"status": "error", "reason": "a not found in query string"}), 400
         return js_arr
     elif not b or b == "":
-        bad_req_code
         js_arr = jsonify({"status": "error", "reason": "b not found in query string"}), 400
         return js_arr
     elif not op or op == "":
-        bad_req_code
         js_arr = jsonify({"status": "error", "reason": "op not found in query string"}), 400
         return js_arr
 
     if op == "*":
-        success_code
         result = float(a) * float(b)
     elif op == "/":
-        success_code
         result = float(a) / float(b)
     elif op == "-":
-        success_code
         result = float(a) - float(b)
     elif op == "+":
-        success_code
         result = float(a) + float(b)
 
     js_arr = {"status": "ok", "date": time_now.strftime('%Y-%m-%d %H:%M'), "result": result}
@@ -87,7 +78,6 @@ def user():
     address = args.get('address')
     age = args.get('age')
     salary = args.get('salary')
-    not_found_code = Response(status=404, mimetype='application/json')
 
     if request.method == 'GET':
         users_l = []
@@ -95,8 +85,7 @@ def user():
         cursor = db.cursor()
 
         if not id_get and not name_get:
-            not_found_code
-            error = jsonify({"status": "error", "reason": "id or name is required"})
+            error = jsonify({"status": "error", "reason": "id or name is required"}), 404
             return error
 
         if name_get:
@@ -107,7 +96,8 @@ def user():
                     WHERE name=?
                 """, (name_get,))
             found_user_name = cursor.fetchone()
-            users_l.append(found_user_name)
+            if found_user_name:
+                users_l.append(found_user_name)
 
         if id_get:
             cursor.execute(
@@ -117,7 +107,8 @@ def user():
                     WHERE id=?
                 """, [id_get])
             found_user_id = cursor.fetchone()
-            users_l.append(found_user_id)
+            if found_user_id:
+                users_l.append(found_user_id)
 
         if id_get and name_get:
             cursor.execute(
@@ -128,8 +119,7 @@ def user():
                 """, [id_get, name_get])
 
         if not users_l:
-            not_found = jsonify({"status": "error", "reason": "Requested user not found"})
-            not_found_code
+            not_found = jsonify({"status": "error", "reason": "Requested user not found"}), 404
             return not_found
 
         db.close()
